@@ -15,8 +15,6 @@
   <img src="media/model_29998_25robots_stagger.gif" width="85%" alt="25 humanoid robots picking up boxes with a trained policy in Isaac Sim, from this environment">
 </p>
 
-<p align="center"><b><i>Reproducible NVIDIA Isaac Sim and Isaac Lab, locked in a Pixi environment. No conda, no pip install.</i></b></p>
-
 ---
 
 A reproducible [Pixi](https://pixi.sh) environment for NVIDIA Isaac Sim 6.0.1 on Python 3.12, with the CUDA 12.8 build of PyTorch.
