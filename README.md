@@ -1,6 +1,23 @@
-# Isaac Sim 6.0.1 + Isaac Lab In Pixi environment
+<h1 align="center">Isaac Sim + Isaac Lab in Pixi</h1>
 
-![25 humanoid robots picking up boxes with a trained policy in Isaac Sim, from this environment](media/model_29998_25robots_stagger.gif)
+<p align="center">
+  <a href="https://github.com/isaac-sim/IsaacSim"><img src="https://img.shields.io/badge/Isaac%20Sim-6.0.1-76B900?logo=nvidia&logoColor=white" alt="Isaac Sim 6.0.1"></a>
+  <a href="https://github.com/isaac-sim/IsaacLab"><img src="https://img.shields.io/badge/Isaac%20Lab-v3.0.0--beta2-1F6FEB" alt="Isaac Lab v3.0.0-beta2"></a>
+  <a href="https://pixi.sh"><img src="https://img.shields.io/badge/Pixi-%E2%89%A50.83-F7C325" alt="Pixi 0.83 or newer"></a>
+  <a href="https://www.python.org"><img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" alt="Python 3.12"></a>
+  <a href="https://pytorch.org"><img src="https://img.shields.io/badge/PyTorch-2.11%20cu128-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch 2.11 cu128"></a>
+  <a href="#1-requirements"><img src="https://img.shields.io/badge/CUDA-%E2%89%A512.8-76B900?logo=nvidia&logoColor=white" alt="CUDA 12.8 or newer"></a>
+  <a href="#1-requirements"><img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 22.04 and 24.04"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-D22128" alt="License Apache 2.0"></a>
+</p>
+
+<p align="center">
+  <img src="media/model_29998_25robots_stagger.gif" width="85%" alt="25 humanoid robots picking up boxes with a trained policy in Isaac Sim, from this environment">
+</p>
+
+<p align="center"><b><i>Reproducible NVIDIA Isaac Sim and Isaac Lab, locked in a Pixi environment. No conda, no pip install.</i></b></p>
+
+---
 
 A reproducible [Pixi](https://pixi.sh) environment for NVIDIA Isaac Sim 6.0.1 on Python 3.12, with the CUDA 12.8 build of PyTorch.
 
@@ -368,5 +385,3 @@ It does not contain Isaac Sim or Isaac Lab. Those are downloaded during setup an
 | Isaac Lab | Cloned by `scripts/bootstrap.sh` from [isaac-sim/IsaacLab](https://github.com/isaac-sim/IsaacLab), BSD-3-Clause |
 
 `pixi.toml` sets `OMNI_KIT_ACCEPT_EULA=YES` so the first launch does not stop at a license prompt. Using this environment therefore means you accept NVIDIA's Omniverse license agreement. Read it before you install.
-
-This project is not affiliated with or endorsed by NVIDIA.
