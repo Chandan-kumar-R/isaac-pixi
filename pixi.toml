@@ -1,0 +1,160 @@
+# ---------------------------------------------------------------------------
+# NVIDIA Isaac Sim 6.0.1, with Isaac Lab as an optional second environment.
+#
+#   bash scripts/bootstrap.sh     # fetch Isaac Lab sources (~150 MB, git only)
+#   pixi install                  # Isaac Sim          -> .pixi/envs/default
+#   pixi install -e lab           # + Isaac Lab        -> .pixi/envs/lab
+#
+#   pixi run isaacsim             # launch the GUI
+#   pixi run -e lab tasks-list    # list RL tasks
+#
+# Everything is locked into pixi.lock. The two environments are separate
+# prefixes, so the `lab` one can never modify the Isaac Sim one.
+# See README.md section 8 for why each setting below is the way it is.
+# ---------------------------------------------------------------------------
+
+[workspace]
+name = "isaac-pixi"
+version = "6.0.1"
+description = "Reproducible NVIDIA Isaac Sim 6.0.1 environment (Python 3.12, CUDA 12.8)"
+authors = ["Chandan Kumar Rajendra <kumarchandan5890@gmail.com>"]
+license = "Apache-2.0"
+license-file = "LICENSE"
+channels = ["conda-forge"]
+#
+#   glibc 2.35  Isaac Sim's wheels are tagged manylinux_2_35, and pixi assumes
+#               an older glibc by default, which makes them look incompatible.
+#               Needs Ubuntu 22.04 / Debian 12 / RHEL 9 or newer.
+#   cuda 12.8   Matches the torch cu128 build below. Reported by the NVIDIA
+#               driver as __cuda, so a machine with no driver, or one too old,
+#               is rejected up front.
+platforms = [{ name = "linux-64-glibc-2-35", platform = "linux-64", glibc = "2.35", cuda = "12.8" }]
+
+# --- conda side: just the interpreter Isaac Sim's wheels are built for -------
+[dependencies]
+python = "3.12.*"
+pip = "*"
+# torch 2.11 requires setuptools<82;
+setuptools = "<82"
+# isaacsim-core pins packaging exactly;
+packaging = "==26.0"
+
+# --- pypi side --------------------------------------------------------------
+# Isaac Sim lives on NVIDIA's index, not on PyPI.
+[pypi-options]
+extra-index-urls = ["https://pypi.nvidia.com"]
+# The isaacsim-* packages are split across NVIDIA's index and PyPI: NVIDIA hosts
+# the simulator, PyPI hosts dependencies like mujoco-usd-converter at the exact
+# versions NVIDIA pins.
+index-strategy = "unsafe-best-match"
+
+# Isaac Sim and Isaac Lab pin four packages to different exact versions, so the
+# two cannot be resolved together without a decision. Every override keeps Isaac
+# Sim's pin, because Isaac Sim is the substrate Isaac Lab runs on.
+#   pillow     isaacsim 12.2.0  vs isaaclab   12.1.1   (patch-level)
+#   coverage   isaacsim  7.4.4  vs isaaclab    7.6.1   (test tooling only)
+#   aiohttp    isaacsim 3.13.4  vs isaaclab_rl 3.13.3  (patch-level)
+#   packaging  isaacsim   26.0  vs isaaclab_rl  <24    (stale upper bound)
+[pypi-options.dependency-overrides]
+pillow = "==12.2.0"
+coverage = "==7.4.4"
+aiohttp = "==3.13.4"
+packaging = "==26.0"
+
+[pypi-dependencies]
+# CUDA 12.8 build. The driver (580.178.04 / CUDA 13.0) is backward compatible.
+torch = { version = "==2.11.0", index = "https://download.pytorch.org/whl/cu128" }
+
+# The full Isaac Sim distribution:
+#   all       -> every isaacsim-* runtime package (app, core, gui, sensor, ...)
+#   extscache -> the pre-built Kit / Kit-SDK / PhysX extension caches
+isaacsim = { version = "==6.0.1.0", extras = ["all", "extscache"] }
+
+# isaacsim-core pins this pre-release exactly. uv only considers pre-releases
+# for a package that is named directly, so restate NVIDIA's pin here.
+tinyobjloader = "==2.0.0rc13"
+
+# --- environment-wide setup -------------------------------------------------
+# Applied by `pixi run` and `pixi shell`, so plain `python` sessions and the
+# tasks below behave identically.
+[activation]
+scripts = ["scripts/activate.sh"]
+
+[activation.env]
+# Accept the Omniverse EULA non-interactively, otherwise the first launch
+# blocks on a terminal prompt and the GUI launch fails.
+OMNI_KIT_ACCEPT_EULA = "YES"
+# Hybrid-graphics laptop: render on the discrete NVIDIA GPU.
+__NV_PRIME_RENDER_OFFLOAD = "1"
+__GLX_VENDOR_LIBRARY_NAME = "nvidia"
+
+# --- tasks ------------------------------------------------------------------
+[tasks.isaacsim]
+cmd = "bash scripts/launch_isaacsim.sh"
+description = "Launch the Isaac Sim GUI (isaacsim.exp.full.kit)"
+
+[tasks.isaacsim-headless]
+cmd = "bash scripts/launch_isaacsim.sh isaacsim.exp.full.kit --no-window"
+description = "Launch Isaac Sim with no GUI window (training / CI)"
+
+[tasks.doctor]
+cmd = "bash scripts/doctor.sh"
+description = "Check GPU, driver, Vulkan and the installed Isaac Sim packages"
+
+[tasks.smoke]
+cmd = "python scripts/smoke_test.py"
+description = "Headless check that the simulator actually starts and steps"
+
+# ---------------------------------------------------------------------------
+# Isaac Lab - OPTIONAL, opt-in environment
+#
+#     pixi install            -> Isaac Sim only          (.pixi/envs/default)
+#     pixi install -e lab     -> Isaac Sim + Isaac Lab   (.pixi/envs/lab)
+#
+# The two are separate prefixes on disk. Installing or breaking `lab` cannot
+# touch `default`.
+# ---------------------------------------------------------------------------
+
+# Editable installs from the checkout, NOT git or wheel installs. Forced by
+# upstream: isaaclab, isaaclab_assets and isaaclab_tasks read
+# `config/extension.toml` from a path relative to their own source directory,
+[feature.isaaclab.pypi-dependencies]
+isaaclab = { path = "IsaacLab/source/isaaclab", editable = true }
+isaaclab_assets = { path = "IsaacLab/source/isaaclab_assets", editable = true }
+isaaclab_tasks = { path = "IsaacLab/source/isaaclab_tasks", editable = true }
+isaaclab_rl = { path = "IsaacLab/source/isaaclab_rl", editable = true, extras = ["rsl-rl", "skrl"] }
+isaaclab_physx = { path = "IsaacLab/source/isaaclab_physx", editable = true }
+isaaclab_newton = { path = "IsaacLab/source/isaaclab_newton", editable = true }
+
+# isaaclab.scene.interactive_scene imports isaaclab_contrib unconditionally
+# (VisuoTactileSensorCfg), so without it no environment can be constructed.
+isaaclab_contrib = { path = "IsaacLab/source/isaaclab_contrib", editable = true }
+
+# Imported unconditionally by the locomotion velocity task config (contact
+# sensor cfg).
+isaaclab_ovphysx = { path = "IsaacLab/source/isaaclab_ovphysx", editable = true }
+
+# The "kit" visualizer extra is empty - it just wraps Isaac Sim's own viewport -
+# so this costs nothing. Without the package, `--viz kit` dies with
+# "Explicitly requested visualizer(s) ['kit'] could not be configured".
+isaaclab_visualizers = { path = "IsaacLab/source/isaaclab_visualizers", editable = true, extras = ["kit"] }
+
+# These tasks exist only in the `lab` environment, so `pixi run isaaclab ...`
+# from the default environment fails loudly instead of half-working.
+[feature.isaaclab.tasks.isaaclab]
+cmd = "bash scripts/isaaclab_setup.sh run"
+description = "Run an Isaac Lab script (train, play, tutorials)"
+
+[feature.isaaclab.tasks.tasks-list]
+cmd = "python scripts/list_tasks.py"
+description = "List the registered Isaac Lab gym environments"
+
+[feature.isaaclab.tasks.isaaclab-clone]
+cmd = "bash scripts/isaaclab_setup.sh clone"
+description = "Re-sync the Isaac Lab checkout to the pinned tag"
+
+# A shared solve-group means both environments resolve as one problem, so Isaac
+# Sim, PyTorch and every other common package are the *same version* in each.
+[environments]
+default = { solve-group = "main" }
+lab = { features = ["isaaclab"], solve-group = "main" }
